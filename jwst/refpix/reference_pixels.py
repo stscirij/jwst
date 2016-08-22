@@ -160,12 +160,20 @@ class Dataset(object):
         mean: float
             clipped mean of data array
 
+        OR:
+
+        None: NoneType
+            if there are no good pixels
+
         """
 
         #
         # Only calculate the clipped mean for pixels that don't have the DO_NOT_USE
         # DQ bit set
         goodpixels = np.where(np.bitwise_and(dq, dqflags.pixel['DO_NOT_USE']) == 0)
+        #
+        # If all the pixels are flagged as bad, return None
+        if len(goodpixels[0] == 0): return None
         #
         # scipy routine fails if the pixels all have exactly the same value
         if np.std(data[goodpixels], dtype=np.float64) != 0.0:
@@ -443,16 +451,50 @@ class NIRDataset(Dataset):
         Returns:
         --------
 
-        None
+        status: Integer
+           0: Normal completion
+           1: At least one of the slices used for calculating the reference pixel value
+              had every pixel's DQ value set to DO_NOT_USE
 
         Side Effect:
         ------------
 
         The parameter _group_ is corrected for the bias drift using the
-        top and bottom reference pixels
+        top and bottom reference pixels if status=0, otherwise it is left unchanged
 
         """
-
+        status = 0
+        #
+        # first check for any reference values that are None
+        invalid_refvalues = []
+        for amplifier in 'ABCD':
+            if self.odd_even_columns:
+                oddreftop = refvalues[amplifier]['odd']['top']
+                if oddreftop is None:
+                    invalid_refvalues.append("Amplifier %s, top section, odd columns" % amplifier)
+                oddrefbottom = refvalues[amplifier]['odd']['bottom']
+                if oddrefbottom is None:
+                    invalid_refvalues.append("Amplifier %s, bottom section, odd columns" % amplifier)
+                evenreftop = refvalues[amplifier]['even']['top']
+                if evenreftop is None:
+                    invalid_refvalues.append("Amplifier %s, top section, even columns" % amplifier)
+                evenrefbottom = refvalues[amplifier]['even']['bottom']
+                if evenrefbottom is None:
+                    invalid_refvalues.append("Amplifier %s, bottom section, even columns" % amplifier)
+            else:
+                reftop = refvalues[amplifier]['top']
+                if reftop is None:
+                    invalid_refvalues.append("Amplifier %s, top section" % amplifier)
+                refbottom = refvalues[amplifier]['bottom']
+                if refbottom is None:
+                    invalid_refvalues.append("Amplifier %s, bottom section" % amplifier)
+        if len(invalid_refvalues) > 0:
+            status = 1
+            log.warning("Reference pixels all flagged as DO_NOT_USE in the following sections")
+            for entry in invalid_refvalues:
+                log.info(entry)
+            log.warning("No top/bottom reference pixel correction done")
+            return status
         for amplifier in 'ABCD':
             datarowstart, datarowstop, datacolstart, datacolstop = \
                 NIR_reference_sections[amplifier]['data']
@@ -478,7 +520,7 @@ class NIRDataset(Dataset):
                 dataslice = (slice(datarowstart, datarowstop, 1),
                              slice(datacolstart, datacolstop, 1))
                 group[dataslice] = group[dataslice] - refsignal
-        return
+        return status
 
     def create_reflected(self, data, smoothing_length):
         """Make an array bigger by extending it at the top and bottom by
@@ -539,6 +581,11 @@ class NIRDataset(Dataset):
 
         result: NDArray
             1-d array that is a median filtered version of the input data
+
+        OR
+
+        None: NoneType
+            If any of the median calculations have no good pixels
         """
 
         augmented_data = self.create_reflected(data, smoothing_length)
@@ -550,6 +597,10 @@ class NIRDataset(Dataset):
             rowstop = rowstart + smoothing_length
             goodpixels = np.where(np.bitwise_and(dq[rowstart:rowstop],
                                                  dqflags.pixel['DO_NOT_USE']) == 0)
+            #
+            # Return None if there are no good pixels
+            if len(goodpixels[0]) == 0:
+                return None
             window = augmented_data[rowstart:rowstop][goodpixels]
             result[i] = np.median(window)
         return result
@@ -653,9 +704,14 @@ class NIRDataset(Dataset):
 
         left = self.calculate_side_ref_signal(group, 0, 3)
         right = self.calculate_side_ref_signal(group, 2044, 2047)
-        sidegroup = self.combine_ref_signals(left, right)
-        corrected_group = self.apply_side_correction(group, sidegroup)
-        return corrected_group
+        if left is None or right is None:
+            log.warning("Side reference pixels contain invalid values")
+            log.warning("Side correction omitted")
+            return group
+        else:
+            sidegroup = self.combine_ref_signals(left, right)
+            corrected_group = self.apply_side_correction(group, sidegroup)
+            return corrected_group
 
     def do_corrections(self):
         """Do Reference Pixels Corrections for all amplifiers, NIR detectors
@@ -675,12 +731,19 @@ class NIRDataset(Dataset):
                 #
                 thisgroup = self.data[integration, group].copy()
                 refvalues = self.get_refvalues(thisgroup)
-                self.do_top_bottom_correction(thisgroup, refvalues)
-                if self.use_side_ref_pixels:
-                    corrected_group = self.do_side_correction(thisgroup)
-                    self.data[integration, group] = corrected_group
-                else:
+                status = self.do_top_bottom_correction(thisgroup, refvalues)
+                #
+                # Omit side reference correction if top-bottom correction is
+                # not done
+                if status > 0:
+                    log.warning("Omitting side reference correction as top/bottom correction was not done")
                     self.data[integration, group] = thisgroup
+                else:
+                    if self.use_side_ref_pixels:
+                        corrected_group = self.do_side_correction(thisgroup)
+                        self.data[integration, group] = corrected_group
+                    else:
+                        self.data[integration, group] = thisgroup
         #
         #  Now transform back from detector to DMS coordinates.
         self.detector_to_DMS()
@@ -1171,6 +1234,37 @@ class MIRIDataset(Dataset):
         left and right side reference pixels
 
         """
+        #
+        # first check for any reference values that are None
+        invalid_refvalues = []
+        for amplifier in 'ABCD':
+            if self.odd_even_rows:
+                oddrefleft = refvalues[amplifier]['odd']['left']
+                if oddrefleft is None:
+                    invalid_refvalues.append("Amplifier %s, left section, odd columns" % amplifier)
+                oddrefright = refvalues[amplifier]['odd']['right']
+                if oddrefright is None:
+                    invalid_refvalues.append("Amplifier %s, right section, odd columns" % amplifier)
+                evenrefleft = refvalues[amplifier]['even']['left']
+                if evenrefleft is None:
+                    invalid_refvalues.append("Amplifier %s, left section, even columns" % amplifier)
+                evenrefright = refvalues[amplifier]['even']['right']
+                if evenrefright is None:
+                    invalid_refvalues.append("Amplifier %s, right section, even columns" % amplifier)
+            else:
+                refleft = refvalues[amplifier]['left']
+                if refleft is None:
+                    invalid_refvalues.append("Amplifier %s, left section" % amplifier)
+                refright = refvalues[amplifier]['right']
+                if refright is None:
+                    invalid_refvalues.append("Amplifier %s, right section" % amplifier)
+        if len(invalid_refvalues) > 0:
+            status = 1
+            log.warning("Reference pixels all flagged as DO_NOT_USE in the following sections")
+            for entry in invalid_refvalues:
+                log.info(entry)
+            log.warning("No left/right reference pixel correction done")
+            return status
 
         for amplifier in 'ABCD':
             datarowstart, datarowstop, datacolstart, datacolstop, stride = \
@@ -1197,7 +1291,7 @@ class MIRIDataset(Dataset):
                 dataslice = (slice(datarowstart, datarowstop, 1),
                              slice(datacolstart, datacolstop, 4))
                 group[dataslice] = group[dataslice] - refsignal
-        return
+        return status
 
     def do_corrections(self):
         """Do Reference Pixels Corrections for all amplifiers, MIRI detectors"""
