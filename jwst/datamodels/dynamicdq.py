@@ -8,17 +8,29 @@ def dynamic_mask(input_model):
     # Dynamic flags define what each plane refers to using the DQ_DEF extension
 
     dq_table = input_model.dq_def
+    print(type(dq_table))
+    print(dq_table.columns)
     # Get the DQ array and the flag definitions
     if (dq_table is not None and
         not np.isscalar(dq_table) and
         len(dq_table.shape) and
         len(dq_table)):
+        columnnames = dq_table.names
+        print(columnnames)
+        # In case the reference file has column names not capitalized
+        tblvalue = ColumnThatMatches('VALUE', columnnames)
+        print(type(tblvalue), tblvalue)
+        tblname = ColumnThatMatches('NAME', columnnames)
+        print(type(tblname), tblname)
         #
         # Make an empty mask
         dqmask = np.zeros(input_model.dq.shape, dtype=input_model.dq.dtype)
         for record in dq_table:
-            bitplane = record['VALUE']
-            dqname = record['NAME'].strip()
+            print(type(record))
+            print(record['VALUE'])
+            print(str(record))
+            bitplane = record[tblvalue]
+            dqname = record[tblname].strip().upper()
             try:
                 standard_bitvalue = dqflags.pixel[dqname]
             except KeyError:
@@ -31,3 +43,17 @@ def dynamic_mask(input_model):
         dqmask = input_model.dq
 
     return dqmask
+
+def ColumnThatMatches(input_string, list_of_names):
+    """
+    Find the string in the list that matches the input_string
+    Caseless comparison
+    """
+
+    for name in list_of_names:
+        if caseless_equal(name, input_string):
+            return name
+    return None
+
+def caseless_equal(left, right):
+    return left.lower() == right.lower()
