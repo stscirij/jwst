@@ -78,6 +78,10 @@ if __name__ == '__main__':
         help='Transform matrices to use instead of calculated'
     )
     parser.add_argument(
+        '--fgsid', type=int, default=1, choices=stp.FGSIDS,
+        help='FGS to use for COARSE mode calculations. Default: %(default)s Choices: %(choices)s'
+    )
+    parser.add_argument(
         '--tolerance', type=int, default=60,
         help='Seconds beyond the observation time to search for telemetry. Default: %(default)s'
     )
@@ -111,6 +115,7 @@ if __name__ == '__main__':
     logger.setLevel(level)
     if level <= logging.DEBUG:
         logger_handler.setFormatter(logger_format_debug)
+    logger.info('set_telescope_pointing called with args %s', args)
 
     override_transforms = args.override_transforms
     if override_transforms:
@@ -134,6 +139,7 @@ if __name__ == '__main__':
                 filename,
                 siaf_path=args.siaf,
                 engdb_url=args.engdb_url,
+                fgsid=args.fgsid,
                 tolerance=args.tolerance,
                 allow_default=args.allow_default,
                 dry_run=args.dry_run,

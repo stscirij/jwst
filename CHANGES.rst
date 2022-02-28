@@ -1,7 +1,94 @@
-1.4.3 (unreleased)
+1.4.4 (unreleased)
 ==================
 
+associations
+------------
 
+- Added valid optical paths for NRS_LAMP observations to generate
+  or exclude associations using lamp, disperser and detector [#6695]
+
+- Include filename extension for `asn_pool` entry, to maintain consistency
+  with `asntable` entry [#6699]
+
+- Add constraint on NIRCam TSGRISM exposures, preventing level 2 and 3
+  associations for detector NRCBLONG [#6709]
+
+- Add fgsid option to set_telescope_pointing [#6717]
+
+align_refs
+----------
+
+- Fixed behavior generating many unnecessary and slow logging warnings on
+  MIRI coronagraphy data, due to large contiguous regions of NON_SCIENCE
+  pixels [#6722]
+
+cube_build
+----------
+
+- Fixed a bug in how the dq plane of NIRspec data is set [#6718]
+
+cube_skymatch
+-------------
+
+- Enabled support for mnemonic DQ codes in the ``cube_skymatch`` step.
+  [#6733, #6736]
+
+datamodels
+----------
+
+- Added the new keyword "BKGMETH" for use in the ``skymatch`` step.
+  [#6736]
+
+extract_1d
+----------
+
+- Clean the logging statements made by `extract_1d` to make the log
+  more useful [#6696]
+
+- Check for non-zero array size before computing sigma-clipped
+  statistics in IFU mode [#6728]
+
+- Add separate behavior for 2D vs (3D data with only one image)
+  by passing appropriate integ value [#6745]
+
+ramp_fitting
+------------
+
+- Updated step docs to clarify exactly what calculations are used for
+  the various flavors of variance and ERR stored in the output
+  products [#6715]
+
+set_telescope_pointing
+----------------------
+
+- Update COARSE handling of FGS, psyiaf importing, model opening, and removal of stale code. [#6735]
+
+skymatch
+--------
+
+- Updated the step docs to clarify the details of the various global,
+  match, and global+match methods. [#6726]
+
+- Enabled support for mnemonic DQ codes in the ``skymatch`` step. Also
+  changed default value for ``dqbits`` from 0 (exclude ALL flagged in DQ
+  pixels) to ``'~DO_NOT_USE+NON_SCIENCE'``. [#6733, #6736]
+
+- Updated to populate the "BKGMETH" keyword in output files. [#6736]
+
+srctype
+-------
+
+- Add command line option to override source type [#6720]
+
+
+
+1.4.3 (2022-02-03)
+==================
+
+set_telescope_pointing
+----------------------
+
+- JP-2509 Update COARSE algorithm to use FGS1 exclusively. [#6700]
 
 1.4.2 (2022-01-20)
 ==================
