@@ -40,10 +40,8 @@ def run_detect_jumps(input_model, gain_model, readnoise_model,
 
     # turn off MP for now
     # max_cores = None
-    data *= gain_2d
-    err *= gain_2d
 
-    new_gdq, new_pdq = detect_jumps(frames_per_group, data, gdq, pdq,
+    new_gdq, new_pdq = detect_jumps(frames_per_group, data, gdq, pdq, err,
                                     gain_2d, readnoise_2d,
                                     rejection_thresh, three_grp_thresh,
                                     four_grp_thresh,
