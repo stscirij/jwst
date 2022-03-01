@@ -17,7 +17,6 @@ def run_detect_jumps(input_model, gain_model, readnoise_model,
 
     # extract data and info from input_model to pass to detect_jumps
     frames_per_group = input_model.meta.exposure.nframes
-    log.info('Making assignments in run_detect_jumops')
     data = input_model.data
     gdq = input_model.groupdq
     pdq = input_model.pixeldq
