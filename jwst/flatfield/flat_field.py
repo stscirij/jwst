@@ -1020,7 +1020,9 @@ def combine_dq(f_flat_dq, s_flat_dq, d_flat_dq, default_shape):
         The DQ array resulting from combining the input DQ arrays via
         bitwise OR.
     """
-    BADFLAT = dqflags.pixel['UNRELIABLE_FLAT'] | dqflags.pixel['DO_NOT_USE']
+    BADFLAT = dqflags.pixel['NO_FLAT_FIELD'] | dqflags.pixel['DO_NOT_USE']
+    BADFLAT = BADFLAT | dqflags.pixel['UNRELIABLE_FLAT']
+
     dq_list = []
     if f_flat_dq is not None:
         dq_list.append(f_flat_dq)
@@ -1042,7 +1044,7 @@ def combine_dq(f_flat_dq, s_flat_dq, d_flat_dq, default_shape):
         temp = np.bitwise_or(dq_list[0], dq_list[1])
         flat_dq = np.bitwise_or(temp, dq_list[2])
 
-    # flag DO_NOT_USE and UNRELIABLE_FLAT if some or all the flats had DO_NOT_USE
+    # flag DO_NOT_USE and NO_FLAT_FIELD if some or all the flats had DO_NOT_USE
     iloc = np.where(np.bitwise_and(flat_dq, dqflags.pixel['DO_NOT_USE']))
     flat_dq[iloc] = np.bitwise_or(flat_dq[iloc], BADFLAT)
 
