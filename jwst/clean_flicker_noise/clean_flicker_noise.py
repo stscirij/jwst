@@ -404,8 +404,8 @@ def clip_to_background(image, mask, sigma_lower=3.0, sigma_upper=2.0,
             sigma = param_opt[2]
 
     # Set limits from center and sigma
-    background_lower_limit = center - sigma_lower * sigma
-    background_upper_limit = center + sigma_upper * sigma
+    background_lower_limit = center - sigma_lower * np.float64(sigma)
+    background_upper_limit = center + sigma_upper * np.float64(sigma)
     if verbose:
         log.debug(f'Mask limits: {background_lower_limit:.5g} '
                   f'to {background_upper_limit:.5g}')
