@@ -394,8 +394,8 @@ class IFUCubeData():
 
         self.b_min = np.min(corner_b)
         self.b_max = np.max(corner_b)
-        self.lambda_min = lambda_min
-        self.lambda_max = lambda_max
+        self.lambda_min = np.float64(lambda_min)
+        self.lambda_max = np.float64(lambda_max)
 
         # along slice: a
         # across slice: b
@@ -474,12 +474,12 @@ class IFUCubeData():
         # adjust max based on integer value of naxis3
         lambda_center = (self.lambda_max + self.lambda_min) / 2.0
 
-        self.lambda_min = lambda_center - (self.naxis3 / 2.0) * self.cdelt3
-        self.lambda_max = lambda_center + (self.naxis3 / 2.0) * self.cdelt3
+        self.lambda_min = lambda_center - (self.naxis3 / 2.0) * np.float64(self.cdelt3)
+        self.lambda_max = lambda_center + (self.naxis3 / 2.0) * np.float64(self.cdelt3)
 
-        self.lambda_max = self.lambda_min + (self.naxis3) * self.cdelt3
+        self.lambda_max = self.lambda_min + (self.naxis3) * np.float64(self.cdelt3)
         self.zcoord = np.zeros(self.naxis3)
-        zstart = self.lambda_min + self.cdelt3 / 2.0
+        zstart = self.lambda_min + np.float64(self.cdelt3) / 2.0
         self.crval3 = zstart
         self.crpix3 = 1.0
         for i in range(self.naxis3):
