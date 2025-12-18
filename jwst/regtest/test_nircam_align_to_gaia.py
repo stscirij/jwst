@@ -3,6 +3,7 @@ from gwcs.wcstools import grid_from_bounding_box
 from numpy.testing import assert_allclose
 from stdatamodels.jwst import datamodels
 
+from jwst.datamodels import ModelLibrary
 from jwst.stpipe import Step
 from jwst.tweakreg import TweakRegStep
 
@@ -59,7 +60,8 @@ def test_sourcecat_as_abs_refcat(run_image3pipeline, rtdata_module):
     rtdata.output = "LMC_F277W_modA_dither_mosaic_cat.ecsv"  # output from source catalog step
     rtdata.get_asn("nircam/image/level3_F277W_3img_asn.json")
 
-    TweakRegStep.call(rtdata.input, abs_refcat=rtdata.output)
+    with ModelLibrary(rtdata.input, on_disk=True) as ml:
+        TweakRegStep.call(ml, abs_refcat=rtdata.output)
 
 
 @pytest.fixture(scope="module", params=["GAIAREFCAT", "GAIADR3"])
