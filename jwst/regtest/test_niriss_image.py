@@ -235,6 +235,7 @@ def test_niriss_image_detector1_with_likelihood(
     _assert_is_same(rtdata_module, fitsdiff_default_kwargs, suffix, truth_dir)
 
 
+@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
 def test_niriss_tweakreg_no_sources(rtdata, fitsdiff_default_kwargs, log_watcher):
     """Make sure tweakreg is skipped when sources are not found."""
 
