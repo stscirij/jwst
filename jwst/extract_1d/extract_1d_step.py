@@ -473,6 +473,8 @@ class Extract1dStep(Step):
                 if self.save_residual_image and residual is not None:
                     self._save_intermediate(residual, "residual", idx)
 
+                model.close()
+
             # If only one result, return the model instead of the container
             if len(result) == 1:
                 result = result[0]
