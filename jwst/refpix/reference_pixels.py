@@ -219,6 +219,9 @@ class Dataset:
         side_gain,
         conv_kernel_params,
         odd_even_rows,
+        siglow,
+        sighigh,
+        first_refpix_row,
     ):
         """
         Construct a Dataset.
@@ -308,7 +311,19 @@ class Dataset:
         self.pixeldq = self.get_pixeldq()
         self.group = None
 
-    def sigma_clip(self, data, dq, low=3.0, high=3.0):
+        self.siglow = siglow
+        self.sighigh = sighigh
+        if first_refpix_row in range(3):
+            for amplifier in self.amplifiers:
+                row = NIR_reference_sections[amplifier]["bottom"]
+                NIR_reference_sections[amplifier]["bottom"] = (
+                    first_refpix_row,
+                    row[1],
+                    row[2],
+                    row[3],
+                )
+
+    def sigma_clip(self, data, dq, low=None, high=None):
         """
         Wrap scipy.stats.sigmaclip so that data with zero variance is handled cleanly.
 
@@ -331,6 +346,11 @@ class Dataset:
         #
         # Only calculate the clipped mean for pixels that don't have the DO_NOT_USE
         # DQ bit set
+        if low is None:
+            low = self.siglow
+        if high is None:
+            high = self.sighigh
+
         goodpixels = np.where(np.bitwise_and(dq, dqflags.pixel["DO_NOT_USE"]) == 0)
         #
         # If there are no good pixels, return None
@@ -575,6 +595,9 @@ class NIRDataset(Dataset):
         side_smoothing_length,
         side_gain,
         conv_kernel_params,
+        siglow,
+        sighigh,
+        first_refpix_row,
     ):
         """
         Construct the NIRDataset base class.
@@ -602,6 +625,7 @@ class NIRDataset(Dataset):
         conv_kernel_params : dict
             Dictionary containing the parameters needed for the optimized convolution kernel
         """
+        odd_even_rows = False
         super(NIRDataset, self).__init__(
             input_model,
             odd_even_columns,
@@ -609,7 +633,10 @@ class NIRDataset(Dataset):
             side_smoothing_length,
             side_gain,
             conv_kernel_params,
-            odd_even_rows=False,
+            odd_even_rows,
+            siglow,
+            sighigh,
+            first_refpix_row,
         )
 
         # Set appropriate NIR sections
@@ -950,6 +977,7 @@ class NIRDataset(Dataset):
                 # For now, just average the top and bottom corrections
                 oddrefsignal = self.average_with_none(oddreftop, oddrefbottom)
                 evenrefsignal = self.average_with_none(evenreftop, evenrefbottom)
+                log.info(f"{amplifier}, {oddrefsignal}, {evenrefsignal}")
                 if oddrefsignal is not None and evenrefsignal is not None:
                     if not self.is_irs2:
                         oddslice = (
@@ -1269,6 +1297,7 @@ class NIRDataset(Dataset):
                 self.dms_to_detector(integration, group)
                 thisgroup = self.group
                 refvalues = self.get_refvalues(thisgroup)
+                log.info(f"Integration {integration} Group {group}")
                 self.do_top_bottom_correction(thisgroup, refvalues)
                 if self.use_side_ref_pixels:
                     corrected_group = self.do_side_correction(thisgroup)
@@ -1818,6 +1847,9 @@ def create_dataset(
     side_gain,
     odd_even_rows,
     conv_kernel_params,
+    siglow,
+    sighigh,
+    first_refpix_row,
 ):
     """
     Create a dataset object from an input model.
@@ -1869,6 +1901,9 @@ def create_dataset(
             side_smoothing_length,
             side_gain,
             conv_kernel_params,
+            siglow,
+            sighigh,
+            first_refpix_row,
         )
     else:
         log.error("Unrecognized detector")
@@ -1879,6 +1914,9 @@ def create_dataset(
             side_smoothing_length,
             side_gain,
             conv_kernel_params,
+            siglow,
+            sighigh,
+            first_refpix_row,
         )
 
 
@@ -1890,6 +1928,9 @@ def correct_model(
     side_gain,
     odd_even_rows,
     conv_kernel_params,
+    siglow,
+    sighigh,
+    first_refpix_row,
 ):
     """
     Perform Reference Pixel Correction on a JWST Model.
@@ -1915,6 +1956,10 @@ def correct_model(
         separately (MIR only)
     conv_kernel_params : dict
         Dictionary containing the parameters needed for the optimized convolution kernel
+    siglow : float
+        Lower sigma threshold for outlier rejection
+    sighigh : float
+        Upper sigma threshold for outlier rejection
 
     Returns
     -------
@@ -1934,6 +1979,9 @@ def correct_model(
         side_gain,
         odd_even_rows,
         conv_kernel_params,
+        siglow,
+        sighigh,
+        first_refpix_row,
     )
 
     if input_dataset is None:
