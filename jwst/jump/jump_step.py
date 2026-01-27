@@ -39,6 +39,7 @@ class JumpStep(Step):
         min_sat_radius_extend = float(default=2.5) # The min radius of the sat core to trigger the extension of the core
         sat_expand = integer(default=2) # Number of pixels to add to the radius of the saturated core of snowballs
         edge_size = integer(default=25) # Distance from detector edge where a saturated core is not required for snowball detection
+        min_snowball_size_edge = float(default=10.0) # Minimum size of snowballs detected near the edge of the detector
         mask_snowball_core_next_int = boolean(default=True) # Flag saturated cores of snowballs in the next integration?
         snowball_time_masked_next_int = integer(default=4000) # Time in seconds over which saturated cores are flagged in next integration
         find_showers = boolean(default=False) # Apply MIRI shower flagging?
@@ -199,6 +200,7 @@ class JumpStep(Step):
             self.min_sat_radius_extend,
             sat_expand,
             self.edge_size,
+            self.min_snowball_size_edge,
         )
 
         max_extended_radius = self.max_extended_radius * 2
