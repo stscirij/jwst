@@ -1380,7 +1380,7 @@ class STTableDataDiff(TableDataDiff):
                     )
 
                 if not self.report_pixel_loc_diffs:
-                    self.diff_total += arrb.size
+                    self.diff_total += number_that_fail_atol_rtol_test
                     self.rel_diffs += np.nan
 
             elif "P" in col.format or "Q" in col.format:
@@ -1517,7 +1517,6 @@ class STTableDataDiff(TableDataDiff):
             total_values = len(self.a) * len(self.a.dtype.fields)
             self.diff_ratio = float(self.diff_total) / float(total_values)
         self.stdiff_ratio = (float(self.diff_total) / float(total_values)) * 100
-        self.diff_ratio_rel = (float(self.rel_diffs) / float(total_values)) * 100
 
     def _report(self):
         # The following lines are identical to the original TableDataDiff code
